@@ -15,6 +15,11 @@ json_new_tweet = api.model('New tweet', {
     'text': fields.String(required=True)
 })
 
+json_list_tweet = api.model('TweetList', {
+    'tweets': fields.List(fields.Nested(json_tweet))
+})
+
+
 @api.route('/<int:id>')
 @api.response(404, 'Tweet not found')
 @api.param('id', 'The tweet unique identifier')
@@ -48,8 +53,13 @@ class TweetResource(Resource):
             return None
 
 @api.route('')
-@api.response(422, 'Invalid tweet')
 class TweetsResource(Resource):
+    @api.marshal_with(json_list_tweet, code=200)
+    def get(self):
+        tweets = db.session.query(Tweet).all()
+        return tweets
+
+    @api.response(422, 'Invalid tweet')
     @api.marshal_with(json_tweet, code=201)
     @api.expect(json_new_tweet, validate=True)
     def post(self):
